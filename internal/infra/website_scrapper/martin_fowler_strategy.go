@@ -21,32 +21,62 @@ func NewMartinFowlerStrategy() *MartinFowlerStrategy {
 }
 
 func (m *MartinFowlerStrategy) Execute() error {
-	pl, err := m.extractPostLinks()
+	pl, err := m.extractPostLinks(true)
 	log.Println("ℹ️ Num posts found:", len(pl))
 	return err
 }
 
-func (m *MartinFowlerStrategy) extractPostLinks() ([]domain.PostLink, error) {
+func (m *MartinFowlerStrategy) extractPostLinks(dryRun bool) ([]domain.PostLink, error) {
 	postLinks := make([]domain.PostLink, 0)
-	c := colly.NewCollector()
+	tagCollector := colly.NewCollector()
+	postCollector := colly.NewCollector()
 
-	c.OnHTML(m.postsQuerySelector, func(e *colly.HTMLElement) {
+	linksFounds, postsScrapped := 0, 0
+
+	tagCollector.OnRequest(func(r *colly.Request) {
+		log.Println("🌍 Visiting Tag Page", r.URL)
+
+	})
+
+	postCollector.OnRequest(func(r *colly.Request) {
+		log.Println("\t 🌍 Visiting Post Page", r.URL)
+	})
+
+	tagCollector.OnHTML(m.postsQuerySelector, func(e *colly.HTMLElement) {
+		if dryRun && linksFounds > 10 {
+			return
+		}
 		postLink, err := domain.NewPostLink(e.Text, e.Attr("href"), m.domain)
 		if err != nil {
 			log.Println(err)
 			return
 		}
+
 		log.Println("✅ Post found", postLink.String())
-		//TODO: scrappe post content and extract text
+		if err := postCollector.Visit(postLink.Link.String()); err != nil {
+			log.Println("🚨 Error scraping post", err)
+			return
+		}
 		postLinks = append(postLinks, postLink)
+		linksFounds++
+
+		if dryRun && linksFounds > 10 {
+			log.Println("🚨 [DryRun] Max links scrapped reached")
+		}
 	})
 
-	c.OnRequest(func(r *colly.Request) {
-		log.Println("🌍 Visiting", r.URL)
+	postCollector.OnHTML("div.paperBody", func(e *colly.HTMLElement) {
+		log.Println("📄 Post content", e.Text)
+		postsScrapped++
 	})
 
-	if err := c.Visit(m.url); err != nil {
+	log.Println("ℹ️ Num links found:", linksFounds)
+	log.Println("ℹ️ Num posts scrapped:", postsScrapped)
+
+	if err := tagCollector.Visit(m.url); err != nil {
+		log.Println("🚨 Error scraping tag page", err)
 		return postLinks, err
 	}
+
 	return postLinks, nil
 }

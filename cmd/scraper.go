@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -6,14 +6,25 @@ import (
 	"github.com/ferminhg/testing-colly/internal/domain"
 	"github.com/ferminhg/testing-colly/internal/infra/storage/inmemory"
 	"github.com/ferminhg/testing-colly/internal/infra/website_scrapper"
+	"github.com/spf13/cobra"
 	"log"
 )
 
-func main() {
+func scrapperCmd(cmd *cobra.Command, args []string) {
+	dryRun, err := cmd.Flags().GetBool("dry-run")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	scrapper(dryRun)
+}
+
+func scrapper(dryRun bool) {
 	fmt.Println("🦀 scraping tech blogs 🦀")
 	postRepository := inmemory.NewPostRepository()
+
 	strategies := []domain.SiteStrategy{
-		website_scrapper.NewMartinFowlerStrategy(postRepository),
+		website_scrapper.NewMartinFowlerStrategy(postRepository, dryRun),
 	}
 	scrapper := application.NewScrapper(strategies)
 

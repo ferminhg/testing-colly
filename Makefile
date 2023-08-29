@@ -1,5 +1,5 @@
 test:
 	go test -v ./...
 
-run:
-	go run cmd/cli.go
+scrapper:
+	go run main.go --dry-run

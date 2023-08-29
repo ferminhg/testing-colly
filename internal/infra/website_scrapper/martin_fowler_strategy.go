@@ -13,20 +13,24 @@ type MartinFowlerStrategy struct {
 	postTextQuerySelector string
 	domain                string
 	repository            repository.PostRepository
+	dryRun                bool
 }
 
-func NewMartinFowlerStrategy(repository repository.PostRepository) *MartinFowlerStrategy {
+func NewMartinFowlerStrategy(repository repository.PostRepository, dryRun bool) *MartinFowlerStrategy {
 	return &MartinFowlerStrategy{
 		domain:                "martinfowler.com",
 		url:                   "https://martinfowler.com/tags/index.html",
 		postsQuerySelector:    "div.title-list p a",
 		postTextQuerySelector: "div.paperBody",
 		repository:            repository,
+		dryRun:                dryRun,
 	}
 }
 
+const MaxPosts = 10
+
 func (m *MartinFowlerStrategy) Execute() error {
-	if err := m.extractPostLinks(true); err != nil {
+	if err := m.extractPostLinks(); err != nil {
 		return err
 	}
 	posts, _ := m.repository.Search()
@@ -34,7 +38,7 @@ func (m *MartinFowlerStrategy) Execute() error {
 	return nil
 }
 
-func (m *MartinFowlerStrategy) extractPostLinks(dryRun bool) error {
+func (m *MartinFowlerStrategy) extractPostLinks() error {
 	tagCollector, postCollector := colly.NewCollector(), colly.NewCollector()
 	linksFounds, postsScrapped := 0, 0
 
@@ -48,7 +52,7 @@ func (m *MartinFowlerStrategy) extractPostLinks(dryRun bool) error {
 	})
 
 	tagCollector.OnHTML(m.postsQuerySelector, func(e *colly.HTMLElement) {
-		if dryRun && linksFounds > 10 {
+		if m.dryRun && linksFounds > MaxPosts {
 			return
 		}
 		postLink, err := domain.NewPost(e.Text, e.Attr("href"), m.domain, "Martin Fowler")
@@ -65,7 +69,7 @@ func (m *MartinFowlerStrategy) extractPostLinks(dryRun bool) error {
 			log.Println("🚨 Error scraping post", err)
 			return
 		}
-		if dryRun && linksFounds > 10 {
+		if m.dryRun && linksFounds > MaxPosts {
 			log.Println("🚨 [DryRun] Max links scrapped reached")
 		}
 	})

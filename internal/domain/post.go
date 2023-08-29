@@ -15,6 +15,8 @@ type Post struct {
 }
 
 func (p *Post) SetText(text string) {
+	// TODO normalizar texto
+
 	p.text = text
 }
 

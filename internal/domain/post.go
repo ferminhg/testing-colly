@@ -35,7 +35,6 @@ func NewPost(title string, link string, host string, author string) (Post, error
 	if err != nil {
 		return Post{}, err
 	}
-
 	if u.Host == "" {
 		u.Scheme = "https"
 		u.Host = host

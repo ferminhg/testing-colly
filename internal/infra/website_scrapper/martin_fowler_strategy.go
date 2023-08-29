@@ -2,6 +2,7 @@ package website_scrapper
 
 import (
 	"github.com/ferminhg/testing-colly/internal/domain"
+	"github.com/ferminhg/testing-colly/internal/domain/repository"
 	"github.com/gocolly/colly"
 	"log"
 )
@@ -10,13 +11,15 @@ type MartinFowlerStrategy struct {
 	url                string
 	postsQuerySelector string
 	domain             string
+	postRepository     repository.PostRepository
 }
 
-func NewMartinFowlerStrategy() *MartinFowlerStrategy {
+func NewMartinFowlerStrategy(postRepository repository.PostRepository) *MartinFowlerStrategy {
 	return &MartinFowlerStrategy{
 		domain:             "martinfowler.com",
 		url:                "https://martinfowler.com/tags/index.html",
 		postsQuerySelector: "div.title-list p a",
+		postRepository:     postRepository,
 	}
 }
 

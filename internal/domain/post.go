@@ -2,34 +2,23 @@ package domain
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"net/url"
+
+	"github.com/google/uuid"
 )
 
 type Post struct {
-	id     uuid.UUID
-	title  string
-	link   url.URL
-	text   string
-	author string
+	Id     uuid.UUID `json:"id"`
+	Title  string    `json:"title"`
+	Link   url.URL   `json:"link"`
+	Text   string    `json:"text"`
+	Author string    `json:"author"`
 }
 
 func (p *Post) SetText(text string) {
 	// TODO normalizar texto
 
-	p.text = text
-}
-
-func (p *Post) Title() string {
-	return p.title
-}
-
-func (p *Post) Link() string {
-	return p.link.String()
-}
-
-func (p *Post) Text() string {
-	return p.text
+	p.Text = text
 }
 
 func NewPost(title string, link string, host string, author string) (Post, error) {
@@ -48,13 +37,13 @@ func NewPost(title string, link string, host string, author string) (Post, error
 	}
 
 	return Post{
-		id:     id,
-		title:  title,
-		link:   *u,
-		author: author,
+		Id:     id,
+		Title:  title,
+		Link:   *u,
+		Author: author,
 	}, nil
 }
 
 func (p *Post) String() string {
-	return fmt.Sprintf("#id: %s \t title: %s, [%s]", p.id, p.Title(), p.Link())
+	return fmt.Sprintf("#id: %s \t title: %s, [%s]", p.Id, p.Title, p.Link.String())
 }

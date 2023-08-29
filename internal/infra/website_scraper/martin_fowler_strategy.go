@@ -1,7 +1,10 @@
-package website_scrapper
+package website_scraper
 
 import (
+	"bytes"
+	"encoding/json"
 	"log"
+	"os"
 
 	"github.com/ferminhg/testing-colly/internal/domain"
 	"github.com/ferminhg/testing-colly/internal/domain/repository"
@@ -67,7 +70,7 @@ func (m *MartinFowlerStrategy) newTagCollector(pc *colly.Collector) *colly.Colle
 			log.Println("🚨 Error saving post", err)
 		}
 		m.linkFounds++
-		if err := pc.Visit(postLink.Link()); err != nil {
+		if err := pc.Visit(postLink.Link.String()); err != nil {
 			log.Println("🚨 Error scraping post", err)
 			return
 		}
@@ -98,4 +101,28 @@ func (m *MartinFowlerStrategy) newPostCollector() *colly.Collector {
 		}
 	})
 	return c
+}
+
+func (m *MartinFowlerStrategy) Marshal(file string) error {
+	buf := new(bytes.Buffer)
+	posts, err := m.repository.Search()
+	if err != nil {
+		return err
+	}
+
+	if err := json.NewEncoder(buf).Encode(posts); err != nil {
+		panic(err)
+	}
+
+	f, err := os.OpenFile(file, os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if _, err := f.Write(buf.Bytes()); err != nil {
+		return err
+	}
+
+	return nil
 }

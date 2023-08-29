@@ -7,7 +7,7 @@ import (
 	"github.com/ferminhg/testing-colly/internal/application"
 	"github.com/ferminhg/testing-colly/internal/domain"
 	"github.com/ferminhg/testing-colly/internal/infra/storage/inmemory"
-	"github.com/ferminhg/testing-colly/internal/infra/website_scrapper"
+	"github.com/ferminhg/testing-colly/internal/infra/website_scraper"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +25,7 @@ func scrapper(dryRun bool) {
 	postRepository := inmemory.NewPostRepository()
 
 	strategies := []domain.SiteStrategy{
-		website_scrapper.NewMartinFowlerStrategy(postRepository, dryRun),
+		website_scraper.NewMartinFowlerStrategy(postRepository, dryRun),
 	}
 	scrapper := application.NewScrapper(strategies)
 

@@ -19,6 +19,10 @@ func (s *Scrapper) Run() error {
 		if err := strategy.Execute(); err != nil {
 			return err
 		}
+
+		if err := strategy.Marshal("output/scraped-posts.json"); err != nil {
+			return err
+		}
 	}
 	return nil
 }

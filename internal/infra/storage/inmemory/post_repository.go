@@ -15,7 +15,7 @@ func NewPostRepository() *PostRepository {
 }
 
 func (p *PostRepository) Save(post domain.Post) error {
-	p.posts[post.Link()] = post
+	p.posts[post.Link.String()] = post
 	return nil
 }
 
@@ -33,6 +33,6 @@ func (p *PostRepository) FindByLink(link string) (domain.Post, bool) {
 }
 
 func (p *PostRepository) Update(post domain.Post) error {
-	p.posts[post.Link()] = post
+	p.posts[post.Link.String()] = post
 	return nil
 }

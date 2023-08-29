@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/ferminhg/testing-colly/internal/application"
 	"github.com/ferminhg/testing-colly/internal/domain"
 	"github.com/ferminhg/testing-colly/internal/infra/storage/inmemory"
 	"github.com/ferminhg/testing-colly/internal/infra/website_scrapper"
 	"github.com/spf13/cobra"
-	"log"
 )
 
 func scrapperCmd(cmd *cobra.Command, args []string) {

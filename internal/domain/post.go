@@ -10,7 +10,7 @@ import (
 type Post struct {
 	Id     uuid.UUID `json:"id"`
 	Title  string    `json:"title"`
-	Link   url.URL   `json:"link"`
+	Link   url.URL   `json:"link" custom:"url"`
 	Text   string    `json:"text"`
 	Author string    `json:"author"`
 }

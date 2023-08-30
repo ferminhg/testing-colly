@@ -3,8 +3,9 @@ package website_scraper
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/ferminhg/testing-colly/internal/infra/storage/filesystem"
 	"log"
-	"os"
+	"strings"
 
 	"github.com/ferminhg/testing-colly/internal/domain"
 	"github.com/ferminhg/testing-colly/internal/domain/repository"
@@ -52,41 +53,52 @@ func (m *MartinFowlerStrategy) Execute() error {
 
 func (m *MartinFowlerStrategy) newTagCollector(pc *colly.Collector) *colly.Collector {
 	c := colly.NewCollector()
-	c.OnRequest(func(r *colly.Request) {
-		log.Println("🌍 Visiting Tag Page", r.URL)
-	})
+	c.OnRequest(logVisitingPage())
 
 	c.OnHTML(m.postsQuerySelector, func(e *colly.HTMLElement) {
-		if m.dryRun && m.linkFounds > MaxPosts {
+		if m.checkDryRun() {
 			return
 		}
-		postLink, err := domain.NewPost(e.Text, e.Attr("href"), m.domain, m.author)
+
+		post, err := m.buildAndSavePostFromHTML(e)
 		if err != nil {
 			log.Println(err)
 			return
 		}
 
-		if err := m.repository.Save(postLink); err != nil {
-			log.Println("🚨 Error saving post", err)
-		}
-		m.linkFounds++
-		if err := pc.Visit(postLink.Link.String()); err != nil {
+		if err := pc.Visit(post.Link.String()); err != nil {
 			log.Println("🚨 Error scraping post", err)
 			return
-		}
-		if m.dryRun && m.linkFounds > MaxPosts {
-			log.Println("🚨 [DryRun] Max links scrapped reached")
 		}
 	})
 
 	return c
 }
 
+func (m *MartinFowlerStrategy) checkDryRun() bool {
+	if m.dryRun && m.linkFounds > MaxPosts {
+		return true
+	}
+	return false
+}
+
+func (m *MartinFowlerStrategy) buildAndSavePostFromHTML(e *colly.HTMLElement) (*domain.Post, error) {
+	post, err := domain.NewPost(e.Text, e.Attr("href"), m.domain, m.author)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := m.repository.Save(post); err != nil {
+		log.Println("🚨 Error saving post", err)
+	}
+	m.linkFounds++
+	return &post, nil
+}
+
 func (m *MartinFowlerStrategy) newPostCollector() *colly.Collector {
 	c := colly.NewCollector()
-	c.OnRequest(func(r *colly.Request) {
-		log.Println("🌍 Visiting Post Page", r.URL)
-	})
+	c.OnRequest(logVisitingPage())
+
 	c.OnHTML(m.postTextQuerySelector, func(e *colly.HTMLElement) {
 		log.Println("\t \t ✅ Post content found")
 		post, found := m.repository.FindByLink(e.Request.URL.String())
@@ -103,7 +115,7 @@ func (m *MartinFowlerStrategy) newPostCollector() *colly.Collector {
 	return c
 }
 
-func (m *MartinFowlerStrategy) Marshal(file string) error {
+func (m *MartinFowlerStrategy) MarshalPosts() error {
 	buf := new(bytes.Buffer)
 	posts, err := m.repository.Search()
 	if err != nil {
@@ -111,18 +123,22 @@ func (m *MartinFowlerStrategy) Marshal(file string) error {
 	}
 
 	if err := json.NewEncoder(buf).Encode(posts); err != nil {
-		panic(err)
-	}
-
-	f, err := os.OpenFile(file, os.O_WRONLY|os.O_CREATE, 0600)
-	if err != nil {
 		return err
 	}
-	defer f.Close()
 
-	if _, err := f.Write(buf.Bytes()); err != nil {
+	outputFile := filesystem.OutputDir +
+		strings.ReplaceAll(m.author, " ", "") +
+		"-scraped-posts.json"
+
+	if err := filesystem.WriteBuffer2File(outputFile, buf); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func logVisitingPage() colly.RequestCallback {
+	return func(r *colly.Request) {
+		log.Println("🌍 Visiting Page: ", r.URL)
+	}
 }

@@ -46,8 +46,10 @@ func (m *MartinFowlerStrategy) Execute() error {
 		return err
 	}
 
-	posts, _ := m.repository.Search()
-	log.Println("ℹ️ Num posts saved:", len(posts))
+	if err := m.marshalPosts(); err != nil {
+		log.Println("🚨 Error marshalling posts", err)
+		return err
+	}
 	return nil
 }
 
@@ -115,7 +117,7 @@ func (m *MartinFowlerStrategy) newPostCollector() *colly.Collector {
 	return c
 }
 
-func (m *MartinFowlerStrategy) MarshalPosts() error {
+func (m *MartinFowlerStrategy) marshalPosts() error {
 	buf := new(bytes.Buffer)
 	posts, err := m.repository.Search()
 	if err != nil {
